@@ -39,6 +39,42 @@ const getUserById = async (req: Request, res: Response) => {
   }
 };
 
+const updateUserController = async (req: Request, res: Response) => {
+  try {
+    const userIdToUpdate = Number(req.params.id);
+    const user = req.body;
+    const data = req.body;
+
+    if (user.role !== "admin" && user.id !== userIdToUpdate) {
+      return res.status(403).json({
+        message: "You are not allowed to update another user’s profile",
+      });
+    }
+
+    if (user.role !== "admin" && data.role) {
+      return res.status(403).json({
+        message: "You are not allowed to change your role",
+      });
+    }
+
+    const updatedUser = await userService.updateUser(userIdToUpdate, data);
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    return res.json({
+      message: "User updated successfully",
+      user: updatedUser,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      message: "Something went wrong",
+      error: error.message,
+    });
+  }
+};
+
 const deleteUser = async (req: Request, res: Response) => {
   try {
     const deletedUser = await userService.deleteUser(Number(req.params.userId));
@@ -58,5 +94,6 @@ export const userControler = {
   createUser,
   getAllUsers,
   getUserById,
+  updateUserController,
   deleteUser,
 };
