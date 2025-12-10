@@ -52,7 +52,7 @@ const updateUser = async (
 };
 
 const deleteUser = async (userId: number) => {
-  // Check for active bookings
+ 
   const activeBookings = await pool.query(
     `SELECT id FROM bookings 
      WHERE customer_id = $1 AND status = 'active'`,

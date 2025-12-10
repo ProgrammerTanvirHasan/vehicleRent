@@ -49,7 +49,7 @@ const updateUserController = async (req: Request, res: Response) => {
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
-    // Check authorization: Admin can update anyone, Customer can only update themselves
+    //  Admin can update anyone, Customer can only update themselves
     if (user.role !== "admin" && user.id !== userIdToUpdate) {
       return res.status(403).json({
         success: false,
