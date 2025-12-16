@@ -71,44 +71,42 @@ const createBooking = async (payload: {
 };
 
 const getAllBookings = async (userId?: number, role?: string) => {
+  await pool.query(`
+    UPDATE bookings 
+    SET status = 'returned'
+    WHERE status = 'active' AND rent_end_date < CURRENT_DATE
+  `);
+
+  await pool.query(`
+    UPDATE vehicles
+    SET availability_status = 'available'
+    WHERE id IN (
+      SELECT vehicle_id FROM bookings
+      WHERE status = 'returned' AND rent_end_date < CURRENT_DATE
+    )
+  `);
+
   let query = `
     SELECT 
-      b.*,
-      u.name as customer_name,
-      u.email as customer_email,
-      v.vehicle_name,
-      v.type,
-      v.registration_number
-    FROM bookings b
-    JOIN users u ON b.customer_id = u.id
-    JOIN vehicles v ON b.vehicle_id = v.id
+      bookings.*,
+      users.name AS customer_name,
+      users.email AS customer_email,
+      vehicles.vehicle_name,
+      vehicles.type,
+      vehicles.registration_number
+    FROM bookings
+    JOIN users ON bookings.customer_id = users.id
+    JOIN vehicles ON bookings.vehicle_id = vehicles.id
   `;
 
   const params: any[] = [];
 
   if (role === "customer" && userId) {
-    query += ` WHERE b.customer_id = $1`;
+    query += ` WHERE bookings.customer_id = $1`;
     params.push(userId);
   }
 
-  await pool.query(
-    `UPDATE bookings 
-     SET status = 'returned'
-     WHERE status = 'active' 
-     AND rent_end_date < CURRENT_DATE`
-  );
-
-  await pool.query(
-    `UPDATE vehicles 
-     SET availability_status = 'available'
-     WHERE id IN (
-       SELECT vehicle_id FROM bookings 
-       WHERE status = 'returned' 
-       AND rent_end_date < CURRENT_DATE
-     )`
-  );
-
-  query += ` ORDER BY b.id DESC`;
+  query += ` ORDER BY bookings.id DESC`;
 
   const result = await pool.query(query, params);
   return result.rows;
@@ -120,23 +118,23 @@ const getBookingById = async (
   role?: string
 ) => {
   let query = `
-    SELECT 
-      b.*,
-      u.name as customer_name,
-      u.email as customer_email,
-      v.vehicle_name,
-      v.type,
-      v.registration_number
-    FROM bookings b
-    JOIN users u ON b.customer_id = u.id
-    JOIN vehicles v ON b.vehicle_id = v.id
-    WHERE b.id = $1
+    SELECT
+      bookings.*,
+      users.name AS customer_name,
+      users.email AS customer_email,
+      vehicles.vehicle_name,
+      vehicles.type,
+      vehicles.registration_number
+    FROM bookings
+    JOIN users ON bookings.customer_id = users.id
+    JOIN vehicles ON bookings.vehicle_id = vehicles.id
+    WHERE bookings.id = $1
   `;
 
   const params: any[] = [bookingId];
 
   if (role === "customer" && userId) {
-    query += ` AND b.customer_id = $2`;
+    query += ` AND bookings.customer_id = $2`;
     params.push(userId);
   }
 
